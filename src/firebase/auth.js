@@ -7,6 +7,9 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from './config';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { db } from './firestore';
+
 
 /**
  * Initialize reCAPTCHA verifier
@@ -40,7 +43,7 @@ export const initializeRecaptcha = (containerId = 'recaptcha-container', options
   };
 
   window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, defaultOptions);
-  
+
   return window.recaptchaVerifier;
 };
 
@@ -65,20 +68,22 @@ export const sendOTP = async (phoneNumber, recaptchaVerifier) => {
 
     // Store confirmation result for OTP verification
     window.confirmationResult = confirmationResult;
-    
+
     return confirmationResult;
   } catch (error) {
     console.error('Error sending OTP:', error);
-    
+
     // Don't clear reCAPTCHA here - let the component handle reinitialization
     // Clearing here causes the "already destroyed" error
-    
+
     throw error;
   }
 };
 
+
+
 /**
- * Verify OTP code
+ * Verify OTP, check Firestore for existing user, create if new, then login.
  * @param {string} otpCode - The 6-digit OTP code
  * @param {ConfirmationResult} confirmationResult - Optional, uses window.confirmationResult if not provided
  * @returns {Promise<UserCredential>}
@@ -86,22 +91,43 @@ export const sendOTP = async (phoneNumber, recaptchaVerifier) => {
 export const verifyOTP = async (otpCode, confirmationResult = null) => {
   try {
     const result = confirmationResult || window.confirmationResult;
-    
-    if (!result) {
-      throw new Error('No confirmation result found. Please request OTP first.');
-    }
+    if (!result) throw new Error("No confirmation result found.");
 
     const userCredential = await result.confirm(otpCode);
-    
-    // Clear the confirmation result after successful verification
+    const user = userCredential.user;
+
     window.confirmationResult = null;
-    
+
+    // Check Firestore for existing user / create if new
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnapshot = await getDoc(userDocRef);
+
+    if (!userSnapshot.exists()) {
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        phoneNumber: user.phoneNumber,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        name: "",
+        email: "",
+      });
+      console.log("✅ New user created");
+    } else {
+      console.log("🔑 Existing user logged in");
+    }
+
+    // --- Get and store Firebase JWT ---
+    const token = await user.getIdToken();
+    localStorage.setItem("firebase_token", token);
+    console.log("Firebase JWT stored in localStorage");
+
     return userCredential;
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    console.error("Error verifying OTP:", error);
     throw error;
   }
 };
+
 
 /**
  * Re-send OTP (same as sendOTP but explicitly named for clarity)
@@ -120,10 +146,10 @@ export const resendOTP = async (phoneNumber, recaptchaVerifier) => {
 export const signOut = async () => {
   try {
     await firebaseSignOut(auth);
-    
+
     // Clear any stored confirmation results
     window.confirmationResult = null;
-    
+
     // Clear reCAPTCHA
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
