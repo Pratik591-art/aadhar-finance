@@ -9,6 +9,7 @@ import {
   query,
   where,
   getDocs,
+  limit,
   serverTimestamp
 } from 'firebase/firestore';
 import app from './config';
@@ -95,6 +96,29 @@ export const deleteUserDetails = async (userId) => {
   } catch (error) {
     console.error('Error deleting user details:', error);
     throw error;
+  }
+};
+
+/**
+ * Check if a phone number is already registered
+ * @param {string} phoneNumber - Phone number to check
+ * @returns {Promise<boolean>}
+ */
+export const checkPhoneNumberExists = async (phoneNumber) => {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(
+      usersRef, 
+      where('phoneNumber', '==', phoneNumber),
+      limit(1) // Add limit for Firestore security rules
+    );
+    const querySnapshot = await getDocs(q);
+    
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('Error checking phone number:', error);
+    // Return false on error to allow registration to continue
+    return false;
   }
 };
 

@@ -23,9 +23,9 @@ const LandingPage = () => {
         <section id="testimonials">
           <TestimonialsSection />
         </section>
-        <section id="download">
+        {/* <section id="download">
           <DownloadAppSection />
-        </section>
+        </section> */}
         <section id="contact">
           <ContactSection />
         </section>

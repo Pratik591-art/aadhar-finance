@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from "./pages/landingPage"
 import GetStarted from './pages/getStarted'
+import Login from './pages/login'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 
@@ -42,11 +43,15 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route 
             path="/get-started" 
+            element={<GetStarted />} 
+          />
+          <Route 
+            path="/login" 
             element={
               <PublicRoute>
-                <GetStarted />
+                <Login />
               </PublicRoute>
-            } 
+          } 
           />
           {/* Dashboard route will be added later */}
           <Route path="*" element={<Navigate to="/" />} />

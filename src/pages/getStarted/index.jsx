@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { saveUserDetails } from '../../firebase';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { saveUserDetails, checkPhoneNumberExists } from "../../firebase";
+import { indianStates, citiesByState } from "../../data/indianLocations";
 
 /**
  * Multi-step Login Flow
@@ -10,48 +12,65 @@ import { saveUserDetails } from '../../firebase';
  * Step 3: Confirmation Message
  */
 const GetStarted = () => {
-  const {
-    user,
-    setupRecaptcha,
-    requestOTP,
-    confirmOTP,
-    isAuthenticated
-  } = useAuth();
+  const { user, setupRecaptcha, requestOTP, confirmOTP, isAuthenticated } =
+    useAuth();
 
   const navigate = useNavigate();
 
   // Form states
   const [step, setStep] = useState(1); // 1: Phone, 2: OTP, 3: User Details, 4: Confirmation
-  const [phoneNumber, setPhoneNumber] = useState('+91');
-  const [otpCode, setOtpCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("+91");
+  const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [submittedData, setSubmittedData] = useState(null);
 
-  // User details state
-  const [userDetails, setUserDetails] = useState({
-    fullName: '',
-    email: '',
-    dateOfBirth: '',
-    gender: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    occupation: ''
+  // React Hook Form for Step 3 (User Details)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors: formErrors },
+    watch,
+    setValue,
+  } = useForm({
+    defaultValues: {
+      fullName: "",
+      email: "",
+      dateOfBirth: "",
+      gender: "",
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
+      occupation: "",
+      aadharNumber: "",
+      panNumber: "",
+    },
   });
+
+  // Watch state field to filter cities
+  const selectedState = watch("state");
+  const availableCities = selectedState && citiesByState[selectedState] ? citiesByState[selectedState] : [];
+
+  // Reset city when state changes
+  useEffect(() => {
+    if (selectedState && step === 3) {
+      setValue("city", "");
+    }
+  }, [selectedState, setValue, step]);
 
   // Initialize reCAPTCHA for step 1
   useEffect(() => {
     if (!isAuthenticated && step === 1) {
       const timer = setTimeout(() => {
         try {
-          setupRecaptcha('recaptcha-container', {
-            size: 'normal',
-            callback: () => console.log('reCAPTCHA verified')
+          setupRecaptcha("recaptcha-container", {
+            size: "normal",
+            callback: () => console.log("reCAPTCHA verified"),
           });
         } catch (err) {
-          console.error('Error initializing reCAPTCHA:', err);
-          setError('Failed to initialize reCAPTCHA. Please refresh the page.');
+          console.error("Error initializing reCAPTCHA:", err);
+          setError("Failed to initialize reCAPTCHA. Please refresh the page.");
         }
       }, 100);
 
@@ -69,45 +88,54 @@ const GetStarted = () => {
   // Handle phone number input (restrict to Indian format)
   const handlePhoneChange = (e) => {
     let value = e.target.value;
-    
+
     // Ensure it starts with +91
-    if (!value.startsWith('+91')) {
-      value = '+91' + value.replace(/^\+91/, '');
+    if (!value.startsWith("+91")) {
+      value = "+91" + value.replace(/^\+91/, "");
     }
-    
+
     // Remove any non-digit characters except the + at the start
-    value = '+91' + value.slice(3).replace(/\D/g, '');
-    
+    value = "+91" + value.slice(3).replace(/\D/g, "");
+
     // Limit to 10 digits after +91
     if (value.length > 13) {
       value = value.slice(0, 13);
     }
-    
+
     setPhoneNumber(value);
   };
 
   // Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       // Validate Indian phone number
       if (phoneNumber.length !== 13) {
-        throw new Error('Please enter a valid 10-digit mobile number');
+        throw new Error("Please enter a valid 10-digit mobile number");
+      }
+
+      // Check if phone number is already registered
+      const phoneExists = await checkPhoneNumberExists(phoneNumber);
+      if (phoneExists) {
+        setError("Your phone number is already registered. Please login instead.");
+        setLoading(false);
+        return;
       }
 
       await requestOTP(phoneNumber);
       setStep(2);
-      console.log('OTP sent successfully');
+      console.log("OTP sent successfully");
     } catch (err) {
-      const errorMessage = err.message || 'Failed to send OTP';
+      const errorMessage = err.message || "Failed to send OTP";
+      // if ()
       setError(errorMessage);
-      console.error('Error:', err);
+      console.error("Error:", err);
 
-      if (err.code === 'auth/internal-error') {
-        setError('reCAPTCHA error. Please refresh the page and try again.');
+      if (err.code === "auth/internal-error") {
+        setError("reCAPTCHA error. Please refresh the page and try again.");
       }
     } finally {
       setLoading(false);
@@ -117,63 +145,49 @@ const GetStarted = () => {
   // Verify OTP
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await confirmOTP(otpCode);
-      console.log('User authenticated successfully');
+      console.log("User authenticated successfully");
       setStep(3); // Move to user details
     } catch (err) {
-      setError(err.message || 'Invalid OTP. Please try again.');
-      console.error('Error:', err);
+      setError(err.message || "Invalid OTP. Please try again.");
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle user details form
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Submit user details
-  const handleSubmitDetails = async (e) => {
-    e.preventDefault();
-    setError('');
+  // Submit user details using React Hook Form
+  const onSubmitUserDetails = async (data) => {
+    setError("");
     setLoading(true);
 
     try {
-      // Validate required fields
-      if (!userDetails.fullName || !userDetails.email || !userDetails.dateOfBirth) {
-        throw new Error('Please fill in all required fields');
-      }
-
-      // Email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userDetails.email)) {
-        throw new Error('Please enter a valid email address');
-      }
+      // Prepare user details with phone number
+      const userDetailsWithPhone = {
+        ...data,
+        phoneNumber: phoneNumber,
+        uid: user?.uid,
+        createdAt: new Date().toISOString(),
+      };
 
       // Save user details to Firestore
       if (user?.uid) {
-        await saveUserDetails(user.uid, {
-          ...userDetails,
-          phoneNumber: phoneNumber,
-          uid: user.uid
-        });
-        console.log('User details saved successfully');
+        await saveUserDetails(user.uid, userDetailsWithPhone);
+        console.log("User details saved successfully", userDetailsWithPhone);
       }
-      
+
+      // Always set submitted data for display
+      setSubmittedData(userDetailsWithPhone);
+
       // Move to confirmation step
       setStep(4);
     } catch (err) {
-      setError(err.message || 'Failed to save details');
-      console.error('Error:', err);
+      setError(err.message || "Failed to save details");
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -182,74 +196,61 @@ const GetStarted = () => {
   // Restart the process
   const handleRestart = () => {
     setStep(1);
-    setPhoneNumber('+91');
-    setOtpCode('');
-    setUserDetails({
-      fullName: '',
-      email: '',
-      dateOfBirth: '',
-      gender: '',
-      address: '',
-      city: '',
-      state: '',
-      pincode: '',
-      occupation: ''
-    });
-    setError('');
+    setPhoneNumber("+91");
+    setOtpCode("");
+    setSubmittedData(null);
+    setError("");
   };
 
   // Render different steps
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
-        {/* Progress Indicator */}
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
+      <div className="w-full max-w-md">
+        {/* Minimalist Progress Indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {[1, 2, 3, 4].map((num) => (
-              <React.Fragment key={num}>
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                  step >= num ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                } font-semibold transition-all duration-300`}>
-                  {num}
-                </div>
-                {num < 4 && (
-                  <div className={`flex-1 h-1 mx-2 ${
-                    step > num ? 'bg-blue-600' : 'bg-gray-300'
-                  } transition-all duration-300`} />
-                )}
-              </React.Fragment>
+              <div
+                key={num}
+                className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                  step >= num ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              />
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
-            <span>Phone</span>
-            <span>OTP</span>
-            <span>Details</span>
-            <span>Done</span>
+          <div className="mt-3 text-center">
+            <p className="text-sm text-gray-500">Step {step} of 4</p>
           </div>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        {/* Main Content */}
+        <div className="space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-              <p className="font-medium">Error</p>
-              <p className="text-sm">{error}</p>
+            <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+              {error}
             </div>
           )}
 
           {/* Step 1: Phone Number */}
           {step === 1 && (
-            <div>
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome! 👋</h2>
-                <p className="text-gray-600">Enter your mobile number to get started</p>
+            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Welcome
+                </h1>
+                <p className="text-gray-500">
+                  Enter your mobile number to continue
+                </p>
               </div>
 
               <form onSubmit={handleSendOTP} className="space-y-6">
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number <span className="text-red-500">*</span>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="phoneNumber"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Mobile Number
                   </label>
                   <input
                     type="tel"
@@ -257,53 +258,136 @@ const GetStarted = () => {
                     value={phoneNumber}
                     onChange={handlePhoneChange}
                     placeholder="+91 XXXXX XXXXX"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base"
                     required
                     disabled={loading}
+                    autoFocus
                   />
-                  <p className="text-xs text-gray-500 mt-2">
-                    We'll send you an OTP to verify your number
-                  </p>
+                  <span className="flex justify-between">
+                    <p className="text-xs text-gray-400">
+                      We'll send you a verification code
+                    </p>
+                    {/* test mobile number */}
+                    <p className="text-xs text-gray-400">
+                      (For testing, use 8140212584)
+                    </p>
+                  </span>
                 </div>
 
                 {/* reCAPTCHA container */}
-                <div id="recaptcha-container" className="flex justify-center"></div>
+                <div
+                  id="recaptcha-container"
+                  className="flex justify-center my-6"
+                ></div>
 
                 <button
                   type="submit"
                   disabled={loading || phoneNumber.length !== 13}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors duration-200 shadow-lg"
+                  className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-all duration-200 active:scale-[0.98]"
                 >
-                  {loading ? 'Sending OTP...' : 'Send OTP'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    "Continue"
+                  )}
                 </button>
               </form>
+
+              {/* Login Link */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Already have an account?{" "}
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="text-blue-600 font-medium hover:text-blue-700 hover:underline transition-colors"
+                  >
+                    Login
+                  </button>
+                </p>
+              </div>
             </div>
           )}
 
           {/* Step 2: OTP Verification */}
           {step === 2 && (
-            <div>
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Verify OTP 🔐</h2>
-                <p className="text-gray-600">
-                  Enter the 6-digit code sent to<br />
-                  <span className="font-semibold text-blue-600">{phoneNumber}</span>
+            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                    type="button"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Enter Code
+                  </h1>
+                </div>
+                <p className="text-gray-500">
+                  Sent to{" "}
+                  <span className="font-medium text-gray-900">
+                    {phoneNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    disabled={loading}
+                    className="ml-2 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                  >
+                    Change Number
+                  </button>
                 </p>
               </div>
 
               <form onSubmit={handleVerifyOTP} className="space-y-6">
-                <div>
-                  <label htmlFor="otpCode" className="block text-sm font-medium text-gray-700 mb-2">
-                    OTP Code <span className="text-red-500">*</span>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="otpCode"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Verification Code
                   </label>
                   <input
                     type="text"
                     id="otpCode"
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
+                    onChange={(e) =>
+                      setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    placeholder="••••••"
                     maxLength="6"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-widest font-semibold"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-[0.5em] font-medium transition-all"
                     required
                     disabled={loading}
                     autoFocus
@@ -313,18 +397,31 @@ const GetStarted = () => {
                 <button
                   type="submit"
                   disabled={loading || otpCode.length !== 6}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors duration-200 shadow-lg"
+                  className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-all duration-200 active:scale-[0.98]"
                 >
-                  {loading ? 'Verifying...' : 'Verify OTP'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  disabled={loading}
-                  className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 disabled:bg-gray-50 font-medium transition-colors duration-200"
-                >
-                  Change Number
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Verifying...
+                    </span>
+                  ) : (
+                    "Verify"
+                  )}
                 </button>
               </form>
             </div>
@@ -332,72 +429,129 @@ const GetStarted = () => {
 
           {/* Step 3: User Details */}
           {step === 3 && (
-            <div>
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Details 📝</h2>
-                <p className="text-gray-600">Help us know you better</p>
+            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  About You
+                </h1>
+                <p className="text-gray-500">Tell us a bit about yourself</p>
               </div>
 
-              <form onSubmit={handleSubmitDetails} className="space-y-4">
-                <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name <span className="text-red-500">*</span>
+              <form
+                onSubmit={handleSubmit(onSubmitUserDetails)}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <label
+                    htmlFor="fullName"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Full Name
                   </label>
                   <input
                     type="text"
                     id="fullName"
-                    name="fullName"
-                    value={userDetails.fullName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                    {...register("fullName", {
+                      required: "Full name is required",
+                      minLength: {
+                        value: 2,
+                        message: "Name must be at least 2 characters",
+                      },
+                    })}
+                    className={`w-full px-4 py-3 border ${
+                      formErrors.fullName ? "border-red-300" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                     disabled={loading}
+                    autoFocus
                   />
+                  {formErrors.fullName && (
+                    <p className="text-xs text-red-600">
+                      {formErrors.fullName.message}
+                    </p>
+                  )}
                 </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address <span className="text-red-500">*</span>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email Address
                   </label>
                   <input
                     type="email"
                     id="email"
-                    name="email"
-                    value={userDetails.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                    {...register("email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Please enter a valid email address",
+                      },
+                    })}
+                    className={`w-full px-4 py-3 border ${
+                      formErrors.email ? "border-red-300" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                     disabled={loading}
                   />
+                  {formErrors.email && (
+                    <p className="text-xs text-red-600">
+                      {formErrors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Birth <span className="text-red-500">*</span>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="dateOfBirth"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Date of Birth
                     </label>
                     <input
                       type="date"
                       id="dateOfBirth"
-                      name="dateOfBirth"
-                      value={userDetails.dateOfBirth}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
+                      {...register("dateOfBirth", {
+                        required: "Date of birth is required",
+                        validate: (value) => {
+                          const today = new Date();
+                          const birthDate = new Date(value);
+                          const age =
+                            today.getFullYear() - birthDate.getFullYear();
+                          return (
+                            age >= 18 || "You must be at least 18 years old"
+                          );
+                        },
+                      })}
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.dateOfBirth
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                       disabled={loading}
                     />
+                    {formErrors.dateOfBirth && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.dateOfBirth.message}
+                      </p>
+                    )}
                   </div>
 
-                  <div>
-                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="gender"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Gender
                     </label>
                     <select
                       id="gender"
-                      name="gender"
-                      value={userDetails.gender}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      {...register("gender", {
+                        required: "Gender is required",
+                      })}
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.gender ? "border-red-300" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white`}
                       disabled={loading}
                     >
                       <option value="">Select</option>
@@ -405,99 +559,293 @@ const GetStarted = () => {
                       <option value="female">Female</option>
                       <option value="other">Other</option>
                     </select>
+                    {formErrors.gender && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.gender.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                {/* Optional Fields Divider */}
+                <div className="pt-2 pb-1">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    Address Information
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="address"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Address
                   </label>
                   <input
                     type="text"
                     id="address"
-                    name="address"
-                    value={userDetails.address}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register("address", {
+                      required: "Address is required",
+                    })}
+                    className={`w-full px-4 py-3 border ${
+                      formErrors.address ? "border-red-300" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                     disabled={loading}
                   />
+                  {formErrors.address && (
+                    <p className="text-xs text-red-600">
+                      {formErrors.address.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={userDetails.city}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="state"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       State
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="state"
-                      name="state"
-                      value={userDetails.state}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      {...register("state", {
+                        required: "State is required",
+                      })}
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.state ? "border-red-300" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white`}
                       disabled={loading}
-                    />
+                    >
+                      {indianStates.map((state) => (
+                        <option key={state.value} value={state.value}>
+                          {state.label}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.state && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.state.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="city"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      City
+                    </label>
+                    <select
+                      id="city"
+                      {...register("city", {
+                        required: "City is required",
+                      })}
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.city ? "border-red-300" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white`}
+                      disabled={loading || !selectedState}
+                    >
+                      <option value="">Select City</option>
+                      {availableCities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.city && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.city.message}
+                      </p>
+                    )}
+                    {!selectedState && (
+                      <p className="text-xs text-gray-400">
+                        Please select a state first
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="pincode" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="pincode"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Pincode
                     </label>
                     <input
                       type="text"
                       id="pincode"
-                      name="pincode"
-                      value={userDetails.pincode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        handleInputChange({ target: { name: 'pincode', value } });
-                      }}
+                      {...register("pincode", {
+                        required: "Pincode is required",
+                        pattern: {
+                          value: /^[0-9]{6}$/,
+                          message: "Pincode must be 6 digits",
+                        },
+                      })}
                       maxLength="6"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.pincode
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                       disabled={loading}
+                      onInput={(e) => {
+                        e.target.value = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 6);
+                      }}
                     />
+                    {formErrors.pincode && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.pincode.message}
+                      </p>
+                    )}
                   </div>
 
-                  <div>
-                    <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="occupation"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Occupation
                     </label>
                     <input
                       type="text"
                       id="occupation"
-                      name="occupation"
-                      value={userDetails.occupation}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      {...register("occupation", {
+                        required: "Occupation is required",
+                      })}
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.occupation ? "border-red-300" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                       disabled={loading}
                     />
+                    {formErrors.occupation && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.occupation.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="pt-4">
+                {/* ID Documents Section */}
+                <div className="pt-2 pb-1">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    ID Documents (Optional)
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="aadharNumber"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Aadhar Number
+                    </label>
+                    <input
+                      type="text"
+                      id="aadharNumber"
+                      {...register("aadharNumber", {
+                        pattern: {
+                          value: /^[0-9]{12}$/,
+                          message: "Aadhar must be 12 digits",
+                        },
+                      })}
+                      placeholder="XXXX XXXX XXXX"
+                      maxLength="12"
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.aadharNumber
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                      disabled={loading}
+                      onInput={(e) => {
+                        e.target.value = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 12);
+                      }}
+                    />
+                    {formErrors.aadharNumber && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.aadharNumber.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="panNumber"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      PAN Number
+                    </label>
+                    <input
+                      type="text"
+                      id="panNumber"
+                      {...register("panNumber", {
+                        pattern: {
+                          value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                          message: "Invalid PAN format (e.g., ABCDE1234F)",
+                        },
+                      })}
+                      placeholder="ABCDE1234F"
+                      maxLength="10"
+                      className={`w-full px-4 py-3 border ${
+                        formErrors.panNumber
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase`}
+                      disabled={loading}
+                      onInput={(e) => {
+                        e.target.value = e.target.value
+                          .toUpperCase()
+                          .slice(0, 10);
+                      }}
+                    />
+                    {formErrors.panNumber && (
+                      <p className="text-xs text-red-600">
+                        {formErrors.panNumber.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors duration-200 shadow-lg"
+                    className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-all duration-200 active:scale-[0.98]"
                   >
-                    {loading ? 'Submitting...' : 'Submit Details'}
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Saving...
+                      </span>
+                    ) : (
+                      "Continue"
+                    )}
                   </button>
                 </div>
               </form>
@@ -506,63 +854,88 @@ const GetStarted = () => {
 
           {/* Step 4: Confirmation */}
           {step === 4 && (
-            <div className="text-center py-8">
-              <div className="mb-6">
-                <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            <div className="text-center animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="mb-8">
+                {/* Success Icon with Animation */}
+                <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-6 animate-checkmark-scale">
+                  <svg
+                    className="w-8 h-8 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      className="animate-checkmark-draw"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">All Set! 🎉</h2>
-                <p className="text-gray-600 mb-6">
-                  Your account has been created successfully
-                </p>
+
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  You're All Set
+                </h1>
+                <p className="text-gray-500">Welcome to Aadhar Finance</p>
               </div>
 
-              <div className="bg-blue-50 rounded-lg p-6 mb-6 text-left">
-                <h3 className="font-semibold text-gray-900 mb-3">Account Summary</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Phone:</span>
-                    <span className="font-medium">{phoneNumber}</span>
+              {/* Summary Card */}
+              <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-500">Phone</span>
+                    <span className="font-medium text-gray-900">
+                      {phoneNumber}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Name:</span>
-                    <span className="font-medium">{userDetails.fullName}</span>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span className="text-sm text-gray-500">Name</span>
+                    <span className="font-medium text-gray-900">
+                      {submittedData?.fullName || "N/A"}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Email:</span>
-                    <span className="font-medium">{userDetails.email}</span>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-500">Email</span>
+                    <span className="font-medium text-gray-900 truncate ml-2">
+                      {submittedData?.email || "N/A"}
+                    </span>
                   </div>
-                  {userDetails.city && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">City:</span>
-                      <span className="font-medium">{userDetails.city}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <button
-                onClick={() => navigate('/')}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-semibold transition-colors duration-200 shadow-lg mb-3"
-              >
-                Go to Home
-              </button>
+              {/* Actions */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate("/")}
+                  className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl hover:bg-blue-700 font-medium transition-all duration-200 active:scale-[0.98]"
+                >
+                  Go to Home
+                </button>
 
-              <button
-                onClick={handleRestart}
-                className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 font-medium transition-colors duration-200"
-              >
-                Start Over
-              </button>
+                <button
+                  onClick={handleRestart}
+                  className="w-full text-gray-600 py-2 px-4 rounded-xl hover:bg-gray-50 font-medium transition-all duration-200 text-sm"
+                >
+                  Start Over
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6 text-sm text-gray-600">
-          <p>By continuing, you agree to our Terms & Privacy Policy</p>
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-400">
+            By continuing, you agree to our{" "}
+            <span className="text-gray-600 hover:text-gray-900 cursor-pointer">
+              Terms
+            </span>{" "}
+            &{" "}
+            <span className="text-gray-600 hover:text-gray-900 cursor-pointer">
+              Privacy Policy
+            </span>
+          </p>
         </div>
       </div>
     </div>

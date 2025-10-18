@@ -17,5 +17,6 @@ export {
   updateUserDetails,
   deleteUserDetails,
   hasCompletedProfile,
-  getUserByEmail
+  getUserByEmail,
+  checkPhoneNumberExists
 } from './firestore';
