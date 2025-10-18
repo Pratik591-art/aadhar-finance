@@ -5,7 +5,7 @@ export {
   sendOTP,
   verifyOTP,
   resendOTP,
-  signOut,
+  signOut, 
   getCurrentUser,
   onAuthChange,
   isAuthenticated

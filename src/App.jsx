@@ -1,9 +1,12 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import LandingPage from "./pages/landingPage"
-import GetStarted from './pages/getStarted'
-import Login from './pages/login'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import Layout from './components/Layout'
+import { Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/landingPage";
+import GetStarted from "./pages/getStarted";
+import Login from "./pages/login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Layout from "./components/Layout";
+import PersonalLoan from "./pages/loanPage/personalLoan";
+import BusinessLoanForm from "./pages/loanPage/BusinessLoanForm";
+import LoanSelector from "./pages/loanPage/index";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -41,24 +44,24 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route 
-            path="/get-started" 
-            element={<GetStarted />} 
-          />
-          <Route 
-            path="/login" 
+          <Route path="/get-started" element={<GetStarted />} />
+          <Route
+            path="/login"
             element={
               <PublicRoute>
                 <Login />
               </PublicRoute>
-          } 
+            }
           />
+          <Route path="/loan" element={<LoanSelector/>} />
+          <Route path="/personal-loan" element={<PersonalLoan />} />
+          <Route path="/Business-loan" element={<BusinessLoanForm />} />
           {/* Dashboard route will be added later */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
