@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
  */
 const Layout = ({ children, showNavbar = true }) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       {showNavbar && <Navbar />}
       <main className="flex-1">
         {children}

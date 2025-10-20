@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { checkPhoneNumberExists } from "../../firebase";
+import SEO from "../../components/SEO";
+import { seoConfigs } from "../../utils/seo";
 
 /**
  * Login Page - Phone OTP Authentication
@@ -36,7 +38,7 @@ const Login = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated]);
+  }, [step, isAuthenticated, setupRecaptcha]);
 
   // If already authenticated, redirect to home
   useEffect(() => {
@@ -140,6 +142,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
+      <SEO {...seoConfigs.login} />
       <div className="w-full max-w-md">
         {/* Minimalist Progress Indicator */}
         <div className="mb-8">

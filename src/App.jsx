@@ -54,8 +54,8 @@ function App() {
             }
           />
           <Route path="/loan" element={<LoanSelector/>} />
-          <Route path="/personal-loan" element={<PersonalLoan />} />
-          <Route path="/Business-loan" element={<BusinessLoanForm />} />
+          <Route path="/loan/personal" element={<PersonalLoan />} />
+          <Route path="/loan/business" element={<BusinessLoanForm />} />
           {/* Dashboard route will be added later */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
