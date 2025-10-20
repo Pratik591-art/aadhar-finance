@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
+import logo from '../assets/logod.png';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,10 +49,7 @@ const Navbar = () => {
             {isMenuOpen ? <FaTimes size={22} className="text-gray-700" /> : <FaBars size={22} className="text-gray-700" />}
           </button>
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-md group-hover:shadow-lg transition-shadow">
-              AF
-            </div>
-            <span className="font-bold text-xl text-gray-900 hidden sm:block">Aadhar Finance</span>
+            <img src={logo} alt="Aadhar Finance Logo" className="h-12" />
           </Link>
         </div>
 

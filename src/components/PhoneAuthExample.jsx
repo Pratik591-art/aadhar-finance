@@ -67,7 +67,6 @@ const PhoneAuthExample = () => {
 
       await sendOTP(phoneNumber, recaptchaVerifier);
       setStep('otp');
-      console.log('OTP sent successfully');
     } catch (err) {
       const errorMessage = err.message || 'Failed to send OTP. Please try again.';
       setError(errorMessage);

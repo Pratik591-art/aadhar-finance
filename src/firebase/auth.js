@@ -31,10 +31,6 @@ export const initializeRecaptcha = (containerId = 'recaptcha-container', options
 
   const defaultOptions = {
     size: 'normal', // 'normal', 'invisible', or 'compact'
-    callback: (response) => {
-      // reCAPTCHA solved, allow signInWithPhoneNumber
-      console.log('reCAPTCHA verified');
-    },
     'expired-callback': () => {
       // Response expired. Ask user to solve reCAPTCHA again
       console.log('reCAPTCHA expired');
@@ -119,7 +115,6 @@ export const verifyOTP = async (otpCode, confirmationResult = null) => {
     // --- Get and store Firebase JWT ---
     const token = await user.getIdToken();
     localStorage.setItem("firebase_token", token);
-    console.log("Firebase JWT stored in localStorage");
 
     return userCredential;
   } catch (error) {

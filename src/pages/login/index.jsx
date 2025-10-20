@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { checkPhoneNumberExists } from "../../firebase";
 
 /**
  * Login Page - Phone OTP Authentication
@@ -26,8 +26,7 @@ const Login = () => {
       const timer = setTimeout(() => {
         try {
           setupRecaptcha("recaptcha-container-login", {
-            size: "normal",
-            callback: () => console.log("reCAPTCHA verified"),
+            size: "normal"
           });
         } catch (err) {
           console.error("Error initializing reCAPTCHA:", err);
@@ -37,7 +36,7 @@ const Login = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated, setupRecaptcha]);
+  }, [step, isAuthenticated]);
 
   // If already authenticated, redirect to home
   useEffect(() => {
@@ -59,9 +58,11 @@ const Login = () => {
     value = "+91" + value.slice(3).replace(/\D/g, "");
 
     // Limit to 10 digits after +91
-    if (value.length <= 13) {
-      setPhoneNumber(value);
+    if (value.length > 13) {
+      value = value.slice(0, 13);
     }
+
+    setPhoneNumber(value);
   };
 
   // Send OTP
@@ -71,15 +72,43 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // Validate Indian phone number
       if (phoneNumber.length !== 13) {
         throw new Error("Please enter a valid 10-digit mobile number");
+      }
+
+      
+      // Check if phone number exists in the database
+      let phoneExists = false;
+      try {
+        phoneExists = await checkPhoneNumberExists(phoneNumber);
+      } catch (checkError) {
+        console.error('Error checking phone number:', checkError);
+        // If there's a Firestore permission error, allow login to proceed
+        if (checkError.code === 'permission-denied') {
+          console.warn('Permission denied - proceeding with login anyway');
+          phoneExists = true; // Assume exists if we can't check
+        } else {
+          throw checkError;
+        }
+      }
+      
+      if (!phoneExists) {
+        setError("Phone number not registered. Please sign up first.");
+        setLoading(false);
+        return;
       }
 
       await requestOTP(phoneNumber);
       setStep(2);
     } catch (err) {
-      console.error("Error sending OTP:", err);
-      setError(err.message || "Failed to send OTP. Please try again.");
+      const errorMessage = err.message || "Failed to send OTP";
+      setError(errorMessage);
+      console.error("Error:", err);
+
+      if (err.code === "auth/internal-error") {
+        setError("reCAPTCHA error. Please refresh the page and try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -92,16 +121,11 @@ const Login = () => {
     setLoading(true);
 
     try {
-      if (otpCode.length !== 6) {
-        throw new Error("Please enter a valid 6-digit OTP");
-      }
-
       await confirmOTP(otpCode);
-      // AuthContext will handle navigation after successful login
       navigate("/");
     } catch (err) {
-      console.error("Error verifying OTP:", err);
       setError(err.message || "Invalid OTP. Please try again.");
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -115,38 +139,27 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4 py-20">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
       <div className="w-full max-w-md">
-        {/* Card Container */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-blue-100/50 p-8 sm:p-10 border border-gray-100">
-          {/* Logo/Brand */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg shadow-blue-200">
-              <span className="text-2xl font-bold text-white">AF</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Aadhar Finance</h2>
-            <p className="text-sm text-gray-500 mt-1">Secure & Fast Loans</p>
+        {/* Minimalist Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2">
+            {[1, 2].map((num) => (
+              <div
+                key={num}
+                className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                  step >= num ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              />
+            ))}
           </div>
-
-          {/* Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2">
-              {[1, 2].map((num) => (
-                <div
-                  key={num}
-                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                    step >= num ? "bg-blue-600" : "bg-gray-200"
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="mt-3 text-center">
-              <p className="text-sm text-gray-500">Step {step} of 2</p>
-            </div>
+          <div className="mt-3 text-center">
+            <p className="text-sm text-gray-500">Step {step} of 2</p>
           </div>
+        </div>
 
-          {/* Main Content */}
-          <div className="space-y-6">
+        {/* Main Content */}
+        <div className="space-y-6">
             {/* Error Message */}
             {error && (
               <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm animate-in fade-in slide-in-from-top-2 duration-300">
@@ -236,8 +249,8 @@ const Login = () => {
                   </button>
                 </form>
 
-                {/* Sign Up Link */}
-                <div className="mt-8 text-center">
+                {/* Login Link */}
+                <div className="mt-6 text-center">
                   <p className="text-sm text-gray-600">
                     Don't have an account?{" "}
                     <button
@@ -255,26 +268,43 @@ const Login = () => {
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="mb-6">
-                  <button
-                    onClick={handleBackToPhone}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors group"
-                    disabled={loading}
-                  >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-sm font-medium">Back</span>
-                  </button>
-
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    Verify OTP
-                  </h1>
-                  <p className="text-gray-500">
-                    Enter the 6-digit code sent to{" "}
+                  <div className="flex items-center gap-3 mb-4">
                     <button
                       onClick={handleBackToPhone}
-                      className="text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                      type="button"
                       disabled={loading}
                     >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+                    <h1 className="text-3xl font-bold text-gray-900">
+                      Enter Code
+                    </h1>
+                  </div>
+                  <p className="text-gray-500">
+                    Sent to{" "}
+                    <span className="font-medium text-gray-900">
                       {phoneNumber}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleBackToPhone}
+                      disabled={loading}
+                      className="ml-2 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                    >
+                      Change Number
                     </button>
                   </p>
                 </div>
@@ -285,36 +315,22 @@ const Login = () => {
                       htmlFor="otpCode"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      OTP Code
+                      Verification Code
                     </label>
                     <input
                       type="text"
                       id="otpCode"
                       value={otpCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "");
-                        if (value.length <= 6) {
-                          setOtpCode(value);
-                        }
-                      }}
-                      placeholder="Enter 6-digit OTP"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xl text-center tracking-[0.5em] font-semibold"
-                      maxLength={6}
+                      onChange={(e) =>
+                        setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      placeholder="••••••"
+                      maxLength="6"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-[0.5em] font-medium transition-all"
                       required
                       disabled={loading}
                       autoFocus
                     />
-                    <p className="text-xs text-gray-400 text-center">
-                      Didn't receive the code?{" "}
-                      <button
-                        type="button"
-                        onClick={handleSendOTP}
-                        className="text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
-                        disabled={loading}
-                      >
-                        Resend
-                      </button>
-                    </p>
                   </div>
 
                   <button
@@ -353,27 +369,6 @@ const Login = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Footer Links */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            By continuing, you agree to our{" "}
-            <a
-              href="/terms"
-              className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="/privacy"
-              className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-            >
-              Privacy Policy
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   );

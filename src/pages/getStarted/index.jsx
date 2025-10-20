@@ -65,8 +65,7 @@ const GetStarted = () => {
       const timer = setTimeout(() => {
         try {
           setupRecaptcha("recaptcha-container", {
-            size: "normal",
-            callback: () => console.log("reCAPTCHA verified"),
+            size: "normal"
           });
         } catch (err) {
           console.error("Error initializing reCAPTCHA:", err);
@@ -127,7 +126,6 @@ const GetStarted = () => {
 
       await requestOTP(phoneNumber);
       setStep(2);
-      console.log("OTP sent successfully");
     } catch (err) {
       const errorMessage = err.message || "Failed to send OTP";
       // if ()
@@ -150,7 +148,6 @@ const GetStarted = () => {
 
     try {
       await confirmOTP(otpCode);
-      console.log("User authenticated successfully");
       setStep(3); // Move to user details
     } catch (err) {
       setError(err.message || "Invalid OTP. Please try again.");

@@ -53,7 +53,6 @@ const AuthWithContext = () => {
 
       await requestOTP(phoneNumber);
       setStep('otp');
-      console.log('OTP sent successfully');
     } catch (err) {
       const errorMessage = err.message || 'Failed to send OTP';
       setError(errorMessage);

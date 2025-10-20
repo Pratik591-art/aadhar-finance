@@ -110,15 +110,18 @@ export const checkPhoneNumberExists = async (phoneNumber) => {
     const q = query(
       usersRef, 
       where('phoneNumber', '==', phoneNumber),
-      limit(1) // Add limit for Firestore security rules
+      limit(1)
     );
     const querySnapshot = await getDocs(q);
     
-    return !querySnapshot.empty;
+    const exists = !querySnapshot.empty;
+    
+    return exists;
   } catch (error) {
     console.error('Error checking phone number:', error);
-    // Return false on error to allow registration to continue
-    return false;
+    console.error('Error details:', error.code, error.message);
+    // Throw error instead of returning false so we can handle it properly
+    throw error;
   }
 };
 
