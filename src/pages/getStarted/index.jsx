@@ -4,6 +4,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { saveUserDetails, checkPhoneNumberExists } from "../../firebase";
 import { indianStates, citiesByState } from "../../data/indianLocations";
+import SEO from "../../components/SEO";
+import { seoConfigs } from "../../utils/seo";
 
 /**
  * Multi-step Login Flow
@@ -202,6 +204,7 @@ const GetStarted = () => {
   // Render different steps
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
+      <SEO {...seoConfigs.signup} />
       <div className="w-full max-w-md">
         {/* Minimalist Progress Indicator */}
         <div className="mb-8">

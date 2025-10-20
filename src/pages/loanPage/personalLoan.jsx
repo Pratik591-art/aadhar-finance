@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, Upload, Camera, CheckCircle, AlertCircle } from 'lucide-react';
+import SEO from '../../components/SEO';
+import { seoConfigs } from '../../utils/seo';
 
 export default function personalLoan() {
   const [page, setPage] = useState(1);
@@ -96,6 +98,7 @@ export default function personalLoan() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
+      <SEO {...seoConfigs.personalLoan} />
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
