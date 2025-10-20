@@ -1,5 +1,4 @@
 import React from 'react';
-import Header from './_components/Header';
 import HeroSection from './_components/HeroSection';
 import FeaturesSection from './_components/FeaturesSection';
 import PartnersSection from './_components/PartnersSection';
@@ -11,7 +10,6 @@ import Footer from './_components/Footer';
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main>
         <section id="hero">
           <HeroSection />
@@ -25,9 +23,9 @@ const LandingPage = () => {
         <section id="testimonials">
           <TestimonialsSection />
         </section>
-        <section id="download">
+        {/* <section id="download">
           <DownloadAppSection />
-        </section>
+        </section> */}
         <section id="contact">
           <ContactSection />
         </section>
