@@ -77,14 +77,14 @@ const GetStarted = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated]);
+  }, [step, isAuthenticated, setupRecaptcha]);
 
   // If already authenticated, move to user details step
   useEffect(() => {
     if (isAuthenticated && step < 3) {
       setStep(3);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, step]);
 
   // Handle phone number input (restrict to Indian format)
   const handlePhoneChange = (e) => {

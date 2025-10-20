@@ -38,7 +38,7 @@ const Login = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated]);
+  }, [step, isAuthenticated, setupRecaptcha]);
 
   // If already authenticated, redirect to home
   useEffect(() => {

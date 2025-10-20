@@ -97,6 +97,7 @@ export const addStructuredData = (data) => {
       }
     } catch (e) {
       // Ignore parsing errors
+      console.error("Error parsing structured data:", e);
     }
   });
   
