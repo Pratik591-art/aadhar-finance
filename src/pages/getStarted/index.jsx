@@ -26,6 +26,7 @@ const GetStarted = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submittedData, setSubmittedData] = useState(null);
+  const [recaptchaInitialized, setRecaptchaInitialized] = useState(false);
 
   // React Hook Form for Step 3 (User Details)
   const {
@@ -61,23 +62,28 @@ const GetStarted = () => {
     }
   }, [selectedState, setValue, step]);
 
-  // Initialize reCAPTCHA for step 1
+  // Initialize reCAPTCHA for step 1 - ONLY ONCE
   useEffect(() => {
-    if (!isAuthenticated && step === 1) {
+    if (!isAuthenticated && step === 1 && !recaptchaInitialized) {
       const timer = setTimeout(() => {
         try {
-          setupRecaptcha("recaptcha-container", {
-            size: "normal"
-          });
+          const container = document.getElementById("recaptcha-container");
+          if (container) {
+            setupRecaptcha("recaptcha-container", {
+              size: "invisible"
+            });
+            setRecaptchaInitialized(true);
+            console.log('✅ reCAPTCHA initialized');
+          }
         } catch (err) {
           console.error("Error initializing reCAPTCHA:", err);
-          setError("Failed to initialize reCAPTCHA. Please refresh the page.");
+          setError("Failed to initialize verification. Please refresh the page.");
         }
-      }, 100);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated, setupRecaptcha]);
+  }, [step, isAuthenticated, recaptchaInitialized, setupRecaptcha]);
 
   // If already authenticated, move to user details step
   useEffect(() => {
@@ -85,6 +91,20 @@ const GetStarted = () => {
       setStep(3);
     }
   }, [isAuthenticated, step]);
+
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        } catch (e) {
+          console.log('Cleanup: reCAPTCHA already cleared');
+        }
+      }
+    };
+  }, []);
 
   // Handle phone number input (restrict to Indian format)
   const handlePhoneChange = (e) => {
@@ -126,17 +146,25 @@ const GetStarted = () => {
         return;
       }
 
+      console.log('📱 Sending OTP to:', phoneNumber);
       await requestOTP(phoneNumber);
+      console.log('✅ OTP sent successfully');
       setStep(2);
     } catch (err) {
-      const errorMessage = err.message || "Failed to send OTP";
-      // if ()
-      setError(errorMessage);
-      console.error("Error:", err);
-
-      if (err.code === "auth/internal-error") {
-        setError("reCAPTCHA error. Please refresh the page and try again.");
+      console.error("❌ Error sending OTP:", err);
+      let errorMessage = "Failed to send OTP. Please try again.";
+      
+      if (err.code === "auth/invalid-phone-number") {
+        errorMessage = "Invalid phone number format.";
+      } else if (err.code === "auth/too-many-requests") {
+        errorMessage = "Too many attempts. Please try again later.";
+      } else if (err.code === "auth/quota-exceeded") {
+        errorMessage = "SMS quota exceeded. Please try again later.";
+      } else if (err.message) {
+        errorMessage = err.message;
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -199,6 +227,17 @@ const GetStarted = () => {
     setOtpCode("");
     setSubmittedData(null);
     setError("");
+    setRecaptchaInitialized(false);
+    
+    // Clear reCAPTCHA
+    if (window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      } catch (e) {
+        console.log('reCAPTCHA already cleared');
+      }
+    }
   };
 
   // Render different steps
@@ -274,11 +313,8 @@ const GetStarted = () => {
                   </span>
                 </div>
 
-                {/* reCAPTCHA container */}
-                <div
-                  id="recaptcha-container"
-                  className="flex justify-center my-6"
-                ></div>
+                {/* reCAPTCHA container - invisible mode */}
+                <div id="recaptcha-container"></div>
 
                 <button
                   type="submit"

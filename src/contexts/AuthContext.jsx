@@ -41,6 +41,16 @@ export const AuthProvider = ({ children }) => {
    */
   const setupRecaptcha = (containerId = 'recaptcha-container', options = {}) => {
     try {
+      // Clear existing verifier from state
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {
+          console.log('Previous verifier already cleared');
+        }
+        setRecaptchaVerifier(null);
+      }
+
       const verifier = initializeRecaptcha(containerId, options);
       setRecaptchaVerifier(verifier);
       return verifier;
