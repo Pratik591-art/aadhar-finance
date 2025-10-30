@@ -8,7 +8,8 @@ import {
 } from 'firebase/auth';
 import { auth } from './config';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { db } from './firestore';
+import { db } from './config';
+
 
 
 /**
@@ -34,7 +35,7 @@ export const initializeRecaptcha = (containerId = 'recaptcha-container', options
   if (!container) {
     throw new Error(`Container element with ID '${containerId}' not found`);
   }
-  
+
   // Clear container content
   container.innerHTML = '';
 
@@ -125,9 +126,7 @@ export const verifyOTP = async (otpCode, confirmationResult = null) => {
       console.log("🔑 Existing user logged in");
     }
 
-    // --- Get and store Firebase JWT ---
-    const token = await user.getIdToken();
-    localStorage.setItem("firebase_token", token);
+    localStorage.setItem("user_uid", user.uid);
 
     return userCredential;
   } catch (error) {
