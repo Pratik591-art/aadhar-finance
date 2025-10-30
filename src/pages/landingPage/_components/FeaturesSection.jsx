@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const FeatureCard = ({ icon, title }) => (
   <div className="flex flex-col items-center text-center p-6 min-w-[180px]">
     <div className="flex items-center justify-center w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-white to-purple-50 group-hover:from-blue-50 group-hover:to-purple-100 transition-all">
-      <span className="text-purple-600 text-4xl group-hover:scale-110 transition-transform duration-200">{icon}</span>
+      <span className="text-sky-600 text-4xl group-hover:scale-110 transition-transform duration-200">{icon}</span>
     </div>
     <h3 className="text-base font-medium text-gray-700 transition-colors duration-200">{title}</h3>
   </div>
@@ -47,8 +47,8 @@ const FeaturesSection = () => {
           ))}
         </motion.div>
         {/* Optional: gradient fade on edges for better UX */}
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-blue-100 to-transparent" />
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-blue-100 to-transparent" />
+        <div className="pointer-events-none absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-gray-50 to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-gray-50 to-transparent" />
       </div>
     </section>
   );

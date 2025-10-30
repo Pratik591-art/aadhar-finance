@@ -100,7 +100,8 @@ export const deleteUserDetails = async (userId) => {
 };
 
 /**
- * Check if a phone number is already registered
+ * Check if a phone number is already registered in Firestore
+ * Note: For signup validation only. Login should rely on Firebase Auth.
  * @param {string} phoneNumber - Phone number to check
  * @returns {Promise<boolean>}
  */
@@ -120,7 +121,10 @@ export const checkPhoneNumberExists = async (phoneNumber) => {
   } catch (error) {
     console.error('Error checking phone number:', error);
     console.error('Error details:', error.code, error.message);
-    // Throw error instead of returning false so we can handle it properly
+    // For permission errors, return false to allow the process to continue
+    if (error.code === 'permission-denied') {
+      return false;
+    }
     throw error;
   }
 };

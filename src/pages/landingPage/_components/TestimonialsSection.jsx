@@ -1,55 +1,113 @@
 import React, { useState } from 'react';
 import { FaChevronLeft, FaChevronRight, FaQuoteLeft } from 'react-icons/fa';
 
-const TestimonialCard = ({ quote, name, avatar }) => {
+function TestimonialCard({ quote, authorName, avatarSrc, avatarInitials }) {
+  // fallback initials from name if avatarInitials not provided
+  const initials =
+    avatarInitials ||
+    (authorName
+      ? authorName
+          .split(" ")
+          .map((n) => n[0])
+          .filter(Boolean)
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "");
+
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg max-w-2xl mx-auto">
-      <FaQuoteLeft className="text-purple-600 text-3xl mb-4" />
-      <p className="text-gray-700 text-lg mb-6 leading-relaxed">
-        {quote}
-      </p>
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-          {avatar}
+    <div className="max-w-2xl mx-auto my-6">
+      <div className="relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        {/* decorative quote */}
+        <svg
+          className="absolute -top-4 left-4 w-8 h-8 text-purple-500"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M7.17 6A5.003 5.003 0 002 11v6a3 3 0 003 3h3a3 3 0 003-3v-6a5 5 0 00-4.83-5zM17.17 6A5.003 5.003 0 0012 11v6a3 3 0 003 3h3a3 3 0 003-3v-6a5 5 0 00-4.83-5z" />
+        </svg>
+
+        <p className="text-gray-700 leading-relaxed text-sm md:text-base pl-1">
+          {quote}
+        </p>
+
+        <div className="mt-6 flex items-center">
+          <div className="flex-shrink-0">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={authorName ? `${authorName} avatar` : "avatar"}
+                className="w-10 h-10 rounded-full object-cover ring-1 ring-gray-200"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-semibold">
+                {initials}
+              </div>
+            )}
+          </div>
+
+          <div className="ml-3">
+            <div className="text-sm font-semibold text-gray-900">
+              {authorName}
+            </div>
+          </div>
         </div>
-        <div className="font-semibold text-gray-800">{name}</div>
       </div>
     </div>
   );
-};
+}
 
 const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const minSwipeDistance = 50;
 
   const testimonials = [
     {
-      quote: "I needed the RD Loan Moneycontrol to clear. Now I was faced with an option you to loan with Moneycontrol. They loaned me the way to clear the deal. I think a instant settle Moneycontrol. They helped me to clear my deal as a total to move.",
-      name: "Suresh V Raghunathan",
-      avatar: "SR"
+      quote: "Aadhar Finance ne meri business loan ki application bahut jaldi approve kar di. Process bilkul simple tha aur koi hidden charges nahi the. Bahut badiya experience!",
+      name: "Rohit Sharma",
+      avatar: "RS"
     },
     {
-      quote: "I received super loans with Moneycontrol in easy really good. I applied for an online personal loan and the service was very quick. The entire process was fast and smooth and the loan was sanctioned without any hassle.",
-      name: "Parveen Modharje",
-      avatar: "PM"
+      quote: "Personal loan lene ka process Aadhar Finance par bahut hi smooth tha. Sirf kuch documents upload kiye aur paise turant mil gaye. Shukriya Aadhar team!",
+      name: "Priya Singh",
+      avatar: "PS"
     },
     {
-      quote: "Amazing service! Got my loan approved within 24 hours. The process was completely digital and hassle-free. Highly recommend Moneycontrol for personal loans.",
-      name: "Rajesh Kumar",
-      avatar: "RK"
+      quote: "I was worried about my credit score, but Aadhar Finance helped me get a loan easily. The support team was very helpful and explained everything clearly.",
+      name: "Amit Verma",
+      avatar: "AV"
+    },
+    {
+      quote: "Bahut hi fast service! Loan approval aur disbursal dono ekdum time pe ho gaya. Main apne dosto ko bhi recommend karunga.",
+      name: "Sunita Yadav",
+      avatar: "SY"
+    },
+    {
+      quote: "Aadhar Finance ki website par sab kuch online ho jata hai. Koi bhi dikkat ho toh customer care turant help karta hai. Best experience!",
+      name: "Deepak Joshi",
+      avatar: "DJ"
+    },
+    {
+      quote: "I needed funds urgently for a medical emergency. Aadhar Finance processed my loan within hours. Thank you for the quick support!",
+      name: "Meena Gupta",
+      avatar: "MG"
     }
   ];
 
+
   // Auto-play functionality
   React.useEffect(() => {
-    if (isHovered) return; // Pause on hover
-
+    if (isHovered || isDragging) return; // Pause on hover or drag
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 5000); // Change testimonial every 5 seconds
-
     return () => clearInterval(interval);
-  }, [isHovered, testimonials.length]);
+  }, [isHovered, isDragging, testimonials.length]);
 
   const nextTestimonial = () => {
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
@@ -59,6 +117,56 @@ const TestimonialsSection = () => {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
+  // Touch handlers
+  const onTouchStart = (e) => {
+    setTouchEnd(0);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    setIsDragging(false);
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextTestimonial();
+    } else if (isRightSwipe) {
+      prevTestimonial();
+    }
+  };
+
+  // Mouse drag handlers
+  const onMouseDown = (e) => {
+    setTouchEnd(0);
+    setTouchStart(e.clientX);
+    setIsDragging(true);
+  };
+
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    setTouchEnd(e.clientX);
+  };
+
+  const onMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextTestimonial();
+    } else if (isRightSwipe) {
+      prevTestimonial();
+    }
+  };
+
   return (
     <section className="bg-gradient-to-br from-purple-50 to-blue-50 py-16 px-4">
       <div className="max-w-7xl mx-auto">
@@ -66,32 +174,47 @@ const TestimonialsSection = () => {
           Customer Feedback
         </h2>
 
-        <div 
+        <div
           className="relative"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Testimonial Card with Fade Animation */}
-          <div className="transition-opacity duration-500">
-            <TestimonialCard {...testimonials[currentIndex]} />
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={prevTestimonial}
-              className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all hover:bg-purple-50 hover:scale-110"
-              aria-label="Previous testimonial"
+          {/* Sliding Cards Container */}
+          <div
+            className="overflow-hidden cursor-grab active:cursor-grabbing"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={() => {
+              if (isDragging) setIsDragging(false);
+            }}
+          >
+            <div
+              className={`flex ${
+                isDragging ? "" : "transition-transform duration-500 ease-out"
+              }`}
+              style={{
+                transform: `translateX(-${currentIndex * 100}%)`,
+                userSelect: isDragging ? "none" : "auto",
+              }}
             >
-              <FaChevronLeft className="text-purple-600" />
-            </button>
-            <button
-              onClick={nextTestimonial}
-              className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all hover:bg-purple-50 hover:scale-110"
-              aria-label="Next testimonial"
-            >
-              <FaChevronRight className="text-purple-600" />
-            </button>
+              {testimonials.map((testimonial, idx) => (
+                <div
+                  key={idx}
+                  className="flex-shrink-0"
+                  style={{ width: "100%" }}
+                >
+                  <TestimonialCard
+                    quote={testimonial.quote}
+                    authorName={testimonial.name}
+                    avatarSrc={testimonial.avatar}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Dots Indicator */}
@@ -101,19 +224,12 @@ const TestimonialsSection = () => {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`h-2 rounded-full transition-all ${
-                  index === currentIndex ? 'bg-purple-600 w-8' : 'bg-gray-300 w-2'
+                  index === currentIndex ? "bg-blue-600 w-8" : "bg-gray-300 w-2"
                 }`}
                 aria-label={`Go to testimonial ${index + 1}`}
               />
             ))}
           </div>
-
-          {/* Auto-play indicator */}
-          {!isHovered && (
-            <div className="absolute top-4 right-4 bg-purple-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm animate-pulse">
-              Auto-playing
-            </div>
-          )}
         </div>
       </div>
     </section>
