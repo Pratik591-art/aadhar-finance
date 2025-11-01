@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { saveUserDetails, checkPhoneNumberExists } from "../../firebase";
+import {
+  saveUserDetails,
+  checkPhoneNumberExists,
+} from "../../actions/firestore";
 import { indianStates, citiesByState } from "../../data/indianLocations";
 import SEO from "../../components/SEO";
 import { seoConfigs } from "../../utils/seo";
@@ -53,7 +56,10 @@ const GetStarted = () => {
 
   // Watch state field to filter cities
   const selectedState = watch("state");
-  const availableCities = selectedState && citiesByState[selectedState] ? citiesByState[selectedState] : [];
+  const availableCities =
+    selectedState && citiesByState[selectedState]
+      ? citiesByState[selectedState]
+      : [];
 
   // Reset city when state changes
   useEffect(() => {
@@ -70,14 +76,16 @@ const GetStarted = () => {
           const container = document.getElementById("recaptcha-container");
           if (container) {
             setupRecaptcha("recaptcha-container", {
-              size: "invisible"
+              size: "invisible",
             });
             setRecaptchaInitialized(true);
-            console.log('✅ reCAPTCHA initialized');
+            console.log("✅ reCAPTCHA initialized");
           }
         } catch (err) {
           console.error("Error initializing reCAPTCHA:", err);
-          setError("Failed to initialize verification. Please refresh the page.");
+          setError(
+            "Failed to initialize verification. Please refresh the page."
+          );
         }
       }, 500);
 
@@ -100,7 +108,7 @@ const GetStarted = () => {
           window.recaptchaVerifier.clear();
           window.recaptchaVerifier = null;
         } catch (e) {
-          console.log('Cleanup: reCAPTCHA already cleared');
+          console.log("Cleanup: reCAPTCHA already cleared");
         }
       }
     };
@@ -141,19 +149,21 @@ const GetStarted = () => {
       // Check if phone number is already registered
       const phoneExists = await checkPhoneNumberExists(phoneNumber);
       if (phoneExists) {
-        setError("Your phone number is already registered. Please login instead.");
+        setError(
+          "Your phone number is already registered. Please login instead."
+        );
         setLoading(false);
         return;
       }
 
-      console.log('📱 Sending OTP to:', phoneNumber);
+      console.log("📱 Sending OTP to:", phoneNumber);
       await requestOTP(phoneNumber);
-      console.log('✅ OTP sent successfully');
+      console.log("✅ OTP sent successfully");
       setStep(2);
     } catch (err) {
       console.error("❌ Error sending OTP:", err);
       let errorMessage = "Failed to send OTP. Please try again.";
-      
+
       if (err.code === "auth/invalid-phone-number") {
         errorMessage = "Invalid phone number format.";
       } else if (err.code === "auth/too-many-requests") {
@@ -163,7 +173,7 @@ const GetStarted = () => {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -228,14 +238,14 @@ const GetStarted = () => {
     setSubmittedData(null);
     setError("");
     setRecaptchaInitialized(false);
-    
+
     // Clear reCAPTCHA
     if (window.recaptchaVerifier) {
       try {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
       } catch (e) {
-        console.log('reCAPTCHA already cleared');
+        console.log("reCAPTCHA already cleared");
       }
     }
   };
@@ -755,7 +765,9 @@ const GetStarted = () => {
                         required: "Occupation is required",
                       })}
                       className={`w-full px-4 py-3 border ${
-                        formErrors.occupation ? "border-red-300" : "border-gray-200"
+                        formErrors.occupation
+                          ? "border-red-300"
+                          : "border-gray-200"
                       } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                       disabled={loading}
                     />
