@@ -12,7 +12,7 @@ import {
   limit,
   serverTimestamp
 } from 'firebase/firestore';
-import app from './config';
+import app from '../firebase/config';
 
 // Initialize Firestore
 export const db = getFirestore(app);
