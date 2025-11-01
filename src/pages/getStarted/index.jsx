@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   saveUserDetails,
   checkPhoneNumberExists,
-} from "../../actions/firestore";
+} from "../../actions/firestore.js";
 import { indianStates, citiesByState } from "../../data/indianLocations";
 import SEO from "../../components/SEO";
 import { seoConfigs } from "../../utils/seo";
