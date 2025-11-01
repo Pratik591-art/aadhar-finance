@@ -1,112 +1,48 @@
 import React, { useState } from 'react';
 import { FaChevronLeft, FaChevronRight, FaCheckCircle, FaInfoCircle, FaStar } from 'react-icons/fa';
 
-const PartnerCard = ({ logo, name, loanType, grievanceRedressal, contactPerson, email, phone, productFeaturesLink, rbiSachetLink, loanOffered, loanTenure, processingFee, interestRate, privacyLink, registerComplaintLink, tncLink, rating = 4.5 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+const PartnerCard = ({ logo, name, loanType, grievanceRedressal, contactPerson, email, phone, privacyLink, registerComplaintLink, tncLink }) => {
   return (
-    <div className="bg-white rounded-3xl border border-gray-200 hover:border-gray-300 transition-all duration-300 overflow-hidden hover:shadow-xl relative">
-      {/* Header - Compact */}
-      <div className="px-6 pt-6 pb-4">
-        {/* Company Name */}
-        <h3 className="text-lg font-bold text-gray-900 mb-3">{name}</h3>
-        
-        {/* Rating and Type */}
-        <div className="flex items-center gap-2 text-sm mb-4">
-          <div className="flex items-center gap-1">
-            <FaStar className="text-yellow-400 text-sm" />
-            <span className="text-gray-700 font-semibold">{rating}</span>
-          </div>
-          <span className="text-gray-400">•</span>
-          <span className="text-gray-600">{loanType}</span>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-gray-100"></div>
-
-      {/* Content - Clean Grid */}
-      <div className="px-6 py-4 space-y-0">
-        {/* Loan Details */}
-        <div className="space-y-0">
-          <div className="flex items-start justify-between py-3 border-b border-gray-50">
-            <span className="text-sm text-gray-600">Loan Amount</span>
-            <span className="text-sm font-bold text-gray-900 text-right">{loanOffered}</span>
-          </div>
-
-          <div className="flex items-start justify-between py-3 border-b border-gray-50">
-            <span className="text-sm text-gray-600">Interest Rate</span>
-            <span className="text-sm font-bold text-blue-600 text-right">{interestRate}</span>
-          </div>
-
-          <div className="flex items-start justify-between py-3 border-b border-gray-50">
-            <span className="text-sm text-gray-600">Tenure</span>
-            <span className="text-sm font-bold text-gray-900 text-right">{loanTenure}</span>
-          </div>
-
-          <div className="flex items-start justify-between py-3">
-            <span className="text-sm text-gray-600">Processing Fee</span>
-            <span className="text-xs font-bold text-gray-900 text-right max-w-[55%] leading-tight">{processingFee}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-gray-100"></div>
-
-      {/* Actions */}
-      <div className="px-6 py-4">
-        {/* CTA Button */}
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-6 rounded-xl font-semibold text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
-          Apply Now
-          <span>→</span>
-        </button>
-
-        {/* Contact Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center justify-center gap-2 py-3 mt-2"
-        >
-          <FaInfoCircle className="text-xs" />
-          <span className="font-medium">{isExpanded ? 'Hide' : 'View'} Contact Details</span>
-          <FaChevronRight className={`text-xs transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-        </button>
-
-        {/* Expandable Contact */}
-        {isExpanded && (
-          <div className="mt-3 p-4 bg-gray-50 rounded-xl space-y-3 text-sm border border-gray-100">
-            <div>
-              <p className="text-gray-500 text-xs mb-1">{grievanceRedressal}</p>
-              <p className="font-semibold text-gray-900">{contactPerson}</p>
-            </div>
-            <div>
-              <a href={`mailto:${email}`} className="text-blue-600 hover:underline font-medium">{email}</a>
-              {phone && <p className="text-gray-600 text-xs mt-1">{phone}</p>}
-            </div>
-            <div className="flex gap-2 pt-2 text-xs">
-              <a href={productFeaturesLink} className="text-blue-600 hover:underline font-medium">Features</a>
-              <span className="text-gray-300">•</span>
-              <a href={rbiSachetLink} className="text-blue-600 hover:underline font-medium">RBI Sachet</a>
-            </div>
-          </div>
+    <div className="bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 overflow-hidden hover:shadow-lg">
+      {/* Logo and Name */}
+      <div className="text-center py-6 border-b border-gray-100">
+        {logo && (
+          <img 
+            src={logo} 
+            alt={name}
+            className="h-12 mx-auto mb-3 object-contain"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
         )}
+        <h3 className="text-base font-semibold text-gray-900 px-4 mb-2">{name}</h3>
+        <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium inline-block">{loanType}</span>
+      </div>
 
-        {/* Footer Links */}
-        <div className="flex justify-center gap-2 text-xs text-gray-500 pt-3">
-          <a href={privacyLink} className="hover:text-blue-600 transition-colors">Privacy</a>
-          {registerComplaintLink && (
-            <>
-              <span>•</span>
-              <a href={registerComplaintLink} className="hover:text-blue-600 transition-colors">Complaint</a>
-            </>
-          )}
-          {tncLink && (
-            <>
-              <span>•</span>
-              <a href={tncLink} className="hover:text-blue-600 transition-colors">T&C</a>
-            </>
-          )}
-        </div>
+      {/* Contact Info */}
+      <div className="p-6 text-center">
+        <p className="text-xs text-gray-500 mb-2">{grievanceRedressal}</p>
+        <p className="text-sm font-medium text-gray-900 mb-2">{contactPerson}</p>
+        <a href={`mailto:${email}`} className="text-sm text-blue-600 hover:underline break-all block mb-1">{email}</a>
+        {phone && <p className="text-xs text-gray-600">{phone}</p>}
+      </div>
+
+      {/* Footer Links */}
+      <div className="px-6 py-4 border-t border-gray-100 flex justify-center gap-3 text-xs">
+        <a href={privacyLink} className="text-blue-600 hover:underline">Privacy Policy</a>
+        {tncLink && (
+          <>
+            <span className="text-gray-300">|</span>
+            <a href={tncLink} className="text-blue-600 hover:underline">T&C</a>
+          </>
+        )}
+        {registerComplaintLink && (
+          <>
+            <span className="text-gray-300">|</span>
+            <a href={registerComplaintLink} className="text-blue-600 hover:underline">Grievance Redressal</a>
+          </>
+        )}
       </div>
     </div>
   );
@@ -153,118 +89,139 @@ const PartnersSection = () => {
 
   const dlaPartners = [
     {
-      name: "pretr",
-      type: "DLA Partner",
-      interestRate: "12% onwards",
-      processingFee: "Free",
-      tenure: "As Applicable Internally",
-      amount: "₹10,000 - ₹5,00,000",
-      registrationLink: "#",
+      name: "Dreamplug Technologies Private Limited",
+      shortName: "prefr",
+      logo: "/prefr_logo.svg",
+      type: "Personal Loan",
+      contactPerson: "Mr. Mallikarjun Maduraj",
+      email: "nodal.officer@prefr.com",
+      grievanceRedressal: "Grievance Redressal",
       privacyLink: "#",
       tncLink: "#",
+      bureauConsentLink: "#",
     },
     {
-      name: "moneyview",
-      type: "DLA Partner",
-      interestRate: "16% onwards",
-      processingFee: "As Applicable",
-      tenure: "As per partner policy",
-      amount: "Upto ₹10,00,000",
-      registrationLink: "#",
+      name: "Moneyview Limited",
+      shortName: "moneyview",
+      logo: "/moneyview_logo.webp",
+      type: "Personal Loan",
+      contactPerson: "Mr. Rishov Bhattacharjee",
+      email: "grievance@moneyview.in",
+      phone: "080 6939 0476",
+      grievanceRedressal: "Grievance Redressal",
       privacyLink: "#",
       tncLink: "#",
+      bureauConsentLink: "#",
     },
   ];
 
   const lendingPartners = [
     {
-      logo: null,
-      name: "L&T Finance Limited",
+      logo: "/kbnbfc_logo.svg",
+      name: "KrazyBee Services Limited",
       loanType: "Personal Loan",
       grievanceRedressal: "Grievance Redressal",
-      contactPerson: "Mr. Vinod Varadan",
-      email: "gro@ltfs.com",
-      phone: null,
-      productFeaturesLink: "#",
-      rbiSachetLink: "#",
-      loanOffered: "₹30 K to 15 Lacs*",
-      loanTenure: "12 to 48 Months",
-      processingFee: "Up to 3% of loan amount + applicable taxes",
-      interestRate: "starting from 11%*",
+      contactPerson: "Mr. Sauraw Kumar",
+      email: "reachus@kbnbfc.in",
+      phone: "8044292555 | 8068534555",
+      privacyLink: "#",
+      registerComplaintLink: null,
+      tncLink: "#",
+    },
+    {
+      logo: "/Bajaj_Finserv_Logo.png",
+      name: "Bajaj Finserv Limited",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Manish Bhargav",
+      email: "grievanceredressalteam@bajajfinserv.in",
+      phone: "02241803901",
+      privacyLink: "#",
+      registerComplaintLink: null,
+      tncLink: "#",
+    },
+    {
+      logo: "/Incred-finance-Logo.webp",
+      name: "InCred Financial Services Limited",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Mr. Vaidyanathan Ramamoorthy",
+      email: "incred.grievance@incred.com",
+      phone: "022-42117799",
+      privacyLink: "#",
+      registerComplaintLink: "#",
+      tncLink: null,
+    },
+    {
+      logo: "/poonawala_fincorp_logo.svg",
+      name: "Poonawalla Fincorp Limited",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Mr. Arnab Das",
+      email: "grievance@poonawallafincorp.com",
+      phone: "020-67808090",
       privacyLink: "#",
       registerComplaintLink: null,
       tncLink: null,
     },
     {
-      logo: null,
+      logo: "/fibe-logo.svg",
+      name: "EarlySalary Services Pvt. Ltd.",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Mr. Amit Nosina",
+      email: "grievance@earlysalary.com",
+      phone: "020-67639797",
+      privacyLink: "#",
+      registerComplaintLink: null,
+      tncLink: "#",
+    },
+    {
+      logo: "/ABCL-LOGO.svg",
+      name: "Aditya Birla Capital Ltd.",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Mr. Arijit Sen",
+      email: "grievance.finance@adityabirlacapital.com",
+      phone: null,
+      privacyLink: "#",
+      registerComplaintLink: null,
+      tncLink: "#",
+    },
+    {
+      logo: "/l&t-LOGO.svg",
+      name: "L&T Finance Limited",
+      loanType: "Personal Loan",
+      grievanceRedressal: "Grievance Redressal",
+      contactPerson: "Mr. Vinod Varadhan",
+      email: "gro@ltfs.com",
+      phone: null,
+      privacyLink: "#",
+      registerComplaintLink: null,
+      tncLink: "#",
+    },
+    {
+      logo: "/Bhanix_Logo.svg",
       name: "Bhanix Finance and Investment Limited(CASHe)",
       loanType: "Personal Loan",
       grievanceRedressal: "Grievance Redressal",
       contactPerson: "Mrs. Pushpinder Kaur",
       email: "grievance@bhanix.in",
       phone: "+919983107444",
-      productFeaturesLink: "#",
-      rbiSachetLink: "#",
-      loanOffered: "₹10 K to 4 Lacs*",
-      loanTenure: "3 to 24 Months",
-      processingFee: "Up to 10% + GST",
-      interestRate: "starting from 18%*",
       privacyLink: "#",
       registerComplaintLink: "#",
       tncLink: null,
     },
     {
-      logo: null,
+      logo: "/paywithring-LOGO.svg",
       name: "Si Creva Capital Service Private Limited",
       loanType: "Personal Loan",
       grievanceRedressal: "Grievance Redressal",
       contactPerson: "Mr. Mukul Dwivedi",
       email: "care@paywithring.com",
       phone: "08044745880 | 08062816300",
-      productFeaturesLink: "#",
-      rbiSachetLink: "#",
-      loanOffered: "₹5 K to 2 Lacs*",
-      loanTenure: "3 to 12 Months",
-      processingFee: "Upto 2.5% of Loan Amount",
-      interestRate: "starting from 24%*",
       privacyLink: "#",
       registerComplaintLink: null,
-      tncLink: "#",
-    },
-    {
-      logo: null,
-      name: "Shriram Capital",
-      loanType: "Personal Loan",
-      grievanceRedressal: "Grievance Redressal",
-      contactPerson: "Mr. Rajesh Kumar",
-      email: "support@shriramcapital.com",
-      phone: "1800-267-6666",
-      productFeaturesLink: "#",
-      rbiSachetLink: "#",
-      loanOffered: "₹20 K to 10 Lacs*",
-      loanTenure: "6 to 12 Months",
-      processingFee: "As decided Internally",
-      interestRate: "starting from 12%*",
-      privacyLink: "#",
-      registerComplaintLink: "#",
-      tncLink: "#",
-    },
-    {
-      logo: null,
-      name: "Bajaj Finance Limited",
-      loanType: "Personal Loan",
-      grievanceRedressal: "Grievance Redressal",
-      contactPerson: "Customer Care",
-      email: "support@bajajfinserv.in",
-      phone: "020-30305555",
-      productFeaturesLink: "#",
-      rbiSachetLink: "#",
-      loanOffered: "₹1 Lac to 40 Lacs*",
-      loanTenure: "6 to 60 Months",
-      processingFee: "Upto 3% with GST",
-      interestRate: "Customized",
-      privacyLink: "#",
-      registerComplaintLink: "#",
       tncLink: "#",
     },
   ];
@@ -434,7 +391,7 @@ const PartnersSection = () => {
           </div>
 
           {/* Carousel Container - Clean */}
-          <div 
+          <div
             className="relative"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -449,7 +406,7 @@ const PartnersSection = () => {
             </button>
 
             {/* Cards Container */}
-            <div 
+            <div
               className="overflow-hidden cursor-grab active:cursor-grabbing"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -463,12 +420,14 @@ const PartnersSection = () => {
                 }
               }}
             >
-              <div 
-                className={`flex ${isDragging ? '' : 'transition-transform duration-500 ease-out'}`}
-                style={{ 
+              <div
+                className={`flex ${
+                  isDragging ? "" : "transition-transform duration-500 ease-out"
+                }`}
+                style={{
                   transform: `translateX(-${currentIndex * 100}%)`,
-                  userSelect: isDragging ? 'none' : 'auto',
-                  gap: itemsPerPage === 1 ? '0' : '1.5rem',
+                  userSelect: isDragging ? "none" : "auto",
+                  gap: itemsPerPage === 1 ? "0" : "1.5rem",
                 }}
               >
                 {lendingPartners.map((partner, index) => (
@@ -476,12 +435,15 @@ const PartnersSection = () => {
                     key={index}
                     className="flex-shrink-0"
                     style={{
-                      width: itemsPerPage === 1 ? '100%' : 
-                             itemsPerPage === 2 ? 'calc(50% - 0.75rem)' : 
-                             'calc(33.333% - 1rem)'
+                      width:
+                        itemsPerPage === 1
+                          ? "100%"
+                          : itemsPerPage === 2
+                          ? "calc(50% - 0.75rem)"
+                          : "calc(33.333% - 1rem)",
                     }}
                   >
-                    <PartnerCard {...partner} rating={4.5 - (index * 0.1)} />
+                    <PartnerCard {...partner} rating={4.5 - index * 0.1} />
                   </div>
                 ))}
               </div>
@@ -494,8 +456,6 @@ const PartnersSection = () => {
             >
               <FaChevronRight className="text-lg" />
             </button>
-
-            
           </div>
 
           {/* Dots - Minimal */}
@@ -505,9 +465,9 @@ const PartnersSection = () => {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`h-2 rounded-full transition-all ${
-                  index === currentIndex 
-                    ? 'bg-blue-600 w-8' 
-                    : 'bg-gray-300 w-2 hover:bg-gray-400'
+                  index === currentIndex
+                    ? "bg-blue-600 w-8"
+                    : "bg-gray-300 w-2 hover:bg-gray-400"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -517,24 +477,27 @@ const PartnersSection = () => {
           {/* Stats - Clean */}
           <div className="grid grid-cols-3 gap-6 mt-12 max-w-2xl mx-auto">
             <div className="text-center py-4 border-r border-gray-200 last:border-r-0">
-              <div className="text-2xl font-bold text-gray-900">5+</div>
+              <div className="text-2xl font-bold text-gray-900">4+</div>
               <p className="text-xs text-gray-600 mt-1">Partners</p>
             </div>
             <div className="text-center py-4 border-r border-gray-200 last:border-r-0">
-              <div className="text-2xl font-bold text-gray-900">₹50L</div>
+              <div className="text-2xl font-bold text-gray-900">₹40L</div>
               <p className="text-xs text-gray-600 mt-1">Max Amount</p>
             </div>
             <div className="text-center py-4">
-              <div className="text-2xl font-bold text-gray-900">10.5%</div>
+              <div className="text-2xl font-bold text-gray-900">11%</div>
               <p className="text-xs text-gray-600 mt-1">From</p>
             </div>
           </div>
         </div>
 
-        {/* Disclaimer - Minimal */}
         <div className="border-l-2 border-yellow-400 bg-yellow-50 p-4 rounded-r-lg mb-16">
           <p className="text-xs text-gray-700 leading-relaxed">
-            <strong className="text-gray-900">Disclaimer:</strong> Moneycontrol Doit Care India Limited is a digital loan partner authorized to provide services on behalf of its Lending Partners. All approvals subject to partner's terms.
+            <strong className="text-gray-900">Disclaimer:</strong> Aadhar
+            Finance (Aadhar) acts as a digital lending facilitator connecting
+            borrowers with lending partners. Loan approvals, terms and
+            eligibility are determined solely by the lending partners. Aadhar is
+            not the lender.
           </p>
         </div>
 
@@ -548,18 +511,16 @@ const PartnersSection = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               DLA Partners
             </h2>
-            <p className="text-gray-600">
-              Quick digital lending solutions
-            </p>
+            <p className="text-gray-600">Quick digital lending solutions</p>
           </div>
 
           {/* DLA Carousel Container - Mobile */}
-          <div 
+          <div
             className="md:hidden relative max-w-4xl mx-auto"
             onMouseEnter={() => setDlaIsHovered(true)}
             onMouseLeave={() => setDlaIsHovered(false)}
           >
-            <div 
+            <div
               className="overflow-hidden cursor-grab active:cursor-grabbing"
               onTouchStart={onDlaTouchStart}
               onTouchMove={onDlaTouchMove}
@@ -573,64 +534,91 @@ const PartnersSection = () => {
                 }
               }}
             >
-              <div 
-                className={`flex ${dlaIsDragging ? '' : 'transition-transform duration-500 ease-out'}`}
-                style={{ 
+              <div
+                className={`flex ${
+                  dlaIsDragging
+                    ? ""
+                    : "transition-transform duration-500 ease-out"
+                }`}
+                style={{
                   transform: `translateX(-${dlaCurrentIndex * 100}%)`,
-                  userSelect: dlaIsDragging ? 'none' : 'auto',
+                  userSelect: dlaIsDragging ? "none" : "auto",
                 }}
               >
                 {dlaPartners.map((partner, index) => (
                   <div
                     key={index}
-                    className="flex-shrink-0"
-                    style={{ width: '100%' }}
+                    className="flex-shrink-0 px-2"
+                    style={{ width: "100%" }}
                   >
-                    <div className="bg-white rounded-3xl border border-gray-200 hover:border-gray-300 transition-all overflow-hidden hover:shadow-xl shadow-lg relative">
-                      {/* Header */}
-                      <div className="p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <span className="text-xl font-bold text-blue-600">{partner.name.charAt(0)}</span>
-                          </div>
-                          <span className="text-xs text-gray-600 border border-gray-200 px-2 py-1 rounded">{partner.type}</span>
+                    <div className="overflow-hidden">
+                      {/* Logo and Name */}
+                      <div className="text-center py-6 ">
+                        <img
+                          src={partner.logo}
+                          alt={partner.shortName}
+                          className="h-12 mx-auto mb-3 object-contain"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
+                          }}
+                        />
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-3 items-center justify-center hidden">
+                          <span className="text-xl font-bold text-blue-600">
+                            {partner.shortName.charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900">{partner.name}</h3>
+                        <h3 className="text-base font-semibold text-gray-900 px-4">
+                          {partner.name}
+                        </h3>
+                        <p className="text-sm bg-blue-500 p-1 px-2 rounded-full font-semibold text-white inline-block mt-1">
+                          {partner.type}
+                        </p>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-6 space-y-2">
-                        <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                          <span className="text-sm text-gray-600">Loan Amount</span>
-                          <span className="text-sm font-semibold text-gray-900">{partner.amount}</span>
-                        </div>
+                      {/* Contact Info */}
+                      <div className="p-6 text-center">
+                        <p className="text-xs text-gray-600 mb-2">
+                          {partner.grievanceRedressal}
+                        </p>
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          {partner.contactPerson}
+                        </p>
+                        <a
+                          href={`mailto:${partner.email}`}
+                          className="text-sm text-blue-600 hover:underline break-all"
+                        >
+                          {partner.email}
+                        </a>
+                        {partner.phone && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {partner.phone}
+                          </p>
+                        )}
+                      </div>
 
-                        <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                          <span className="text-sm text-gray-600">Interest Rate</span>
-                          <span className="text-sm font-semibold text-blue-600">{partner.interestRate}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                          <span className="text-sm text-gray-600">Tenure</span>
-                          <span className="text-xs font-semibold text-gray-900 text-right max-w-[50%]">{partner.tenure}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-sm text-gray-600">Processing Fee</span>
-                          <span className="text-sm font-semibold text-gray-900">{partner.processingFee}</span>
-                        </div>
-
-                        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium text-sm transition-colors mt-4">
-                          Apply with {partner.name} →
-                        </button>
-
-                        <div className="flex justify-center gap-2 text-xs text-gray-500 pt-2">
-                          <a href={partner.registrationLink} className="hover:text-blue-600 transition-colors">Registration</a>
-                          <span>•</span>
-                          <a href={partner.privacyLink} className="hover:text-blue-600 transition-colors">Privacy</a>
-                          <span>•</span>
-                          <a href={partner.tncLink} className="hover:text-blue-600 transition-colors">T&C</a>
-                        </div>
+                      {/* Footer Links */}
+                      <div className="px-6 py-4 flex justify-center gap-3 text-xs">
+                        <a
+                          href={partner.privacyLink}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Privacy Policy
+                        </a>
+                        <span className="text-gray-300">|</span>
+                        <a
+                          href={partner.tncLink}
+                          className="text-blue-600 hover:underline"
+                        >
+                          T&C
+                        </a>
+                        <span className="text-gray-300">|</span>
+                        <a
+                          href={partner.bureauConsentLink}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Bureau Consent
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -645,9 +633,9 @@ const PartnersSection = () => {
                   key={index}
                   onClick={() => setDlaCurrentIndex(index)}
                   className={`h-2 rounded-full transition-all ${
-                    index === dlaCurrentIndex 
-                      ? 'bg-blue-600 w-8' 
-                      : 'bg-gray-300 w-2 hover:bg-gray-400'
+                    index === dlaCurrentIndex
+                      ? "bg-blue-600 w-8"
+                      : "bg-gray-300 w-2 hover:bg-gray-400"
                   }`}
                   aria-label={`Go to DLA slide ${index + 1}`}
                 />
@@ -658,51 +646,74 @@ const PartnersSection = () => {
           {/* DLA Grid - Tablet and Desktop */}
           <div className="hidden md:grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {dlaPartners.map((partner, index) => (
-              <div key={index} className="bg-white rounded-3xl border border-gray-200 hover:border-gray-300 transition-all overflow-hidden hover:shadow-xl relative">
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <span className="text-xl font-bold text-blue-600">{partner.name.charAt(0)}</span>
-                    </div>
-                    <span className="text-xs text-gray-600 border border-gray-200 px-2 py-1 rounded">{partner.type}</span>
+              <div key={index} className="overflow-hidden">
+                {/* Logo and Name */}
+                <div className="text-center py-6">
+                  <img
+                    src={partner.logo}
+                    alt={partner.shortName}
+                    className="h-12 mx-auto mb-3 object-contain"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
+                  />
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-3 items-center justify-center hidden">
+                    <span className="text-xl font-bold text-blue-600">
+                      {partner.shortName.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">{partner.name}</h3>
+                  <h3 className="text-base font-semibold text-gray-900 px-4">
+                    {partner.name}
+                  </h3>
+                  <p className="text-sm bg-blue-500 p-1 px-2 rounded-full font-semibold text-white inline-block mt-1">
+                    {partner.type}
+                  </p>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-2">
-                  <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                    <span className="text-sm text-gray-600">Loan Amount</span>
-                    <span className="text-sm font-semibold text-gray-900">{partner.amount}</span>
-                  </div>
+                {/* Contact Info */}
+                <div className="p-6 text-center">
+                  <p className="text-xs text-gray-600 mb-2">
+                    {partner.grievanceRedressal}
+                  </p>
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    {partner.contactPerson}
+                  </p>
+                  <a
+                    href={`mailto:${partner.email}`}
+                    className="text-sm text-blue-600 hover:underline break-all"
+                  >
+                    {partner.email}
+                  </a>
+                  {partner.phone && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {partner.phone}
+                    </p>
+                  )}
+                </div>
 
-                  <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                    <span className="text-sm text-gray-600">Interest Rate</span>
-                    <span className="text-sm font-semibold text-blue-600">{partner.interestRate}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                    <span className="text-sm text-gray-600">Tenure</span>
-                    <span className="text-xs font-semibold text-gray-900 text-right max-w-[50%]">{partner.tenure}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-600">Processing Fee</span>
-                    <span className="text-sm font-semibold text-gray-900">{partner.processingFee}</span>
-                  </div>
-
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium text-sm transition-colors mt-4">
-                    Apply with {partner.name} →
-                  </button>
-
-                  <div className="flex justify-center gap-2 text-xs text-gray-500 pt-2">
-                    <a href={partner.registrationLink} className="hover:text-blue-600 transition-colors">Registration</a>
-                    <span>•</span>
-                    <a href={partner.privacyLink} className="hover:text-blue-600 transition-colors">Privacy</a>
-                    <span>•</span>
-                    <a href={partner.tncLink} className="hover:text-blue-600 transition-colors">T&C</a>
-                  </div>
+                {/* Footer Links */}
+                <div className="px-6 py-4 flex justify-center gap-3 text-xs">
+                  <a
+                    href={partner.privacyLink}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  <span className="text-gray-300">|</span>
+                  <a
+                    href={partner.tncLink}
+                    className="text-blue-600 hover:underline"
+                  >
+                    T&C
+                  </a>
+                  <span className="text-gray-300">|</span>
+                  <a
+                    href={partner.bureauConsentLink}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Bureau Consent
+                  </a>
                 </div>
               </div>
             ))}

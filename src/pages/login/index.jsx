@@ -21,24 +21,44 @@ const Login = () => {
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recaptchaInitialized, setRecaptchaInitialized] = useState(false);
 
-  // Initialize reCAPTCHA for step 1
+  // Initialize reCAPTCHA for step 1 - ONLY ONCE
   useEffect(() => {
-    if (!isAuthenticated && step === 1) {
+    if (!isAuthenticated && step === 1 && !recaptchaInitialized) {
       const timer = setTimeout(() => {
         try {
-          setupRecaptcha("recaptcha-container-login", {
-            size: "normal"
-          });
+          const container = document.getElementById("recaptcha-container-login");
+          if (container) {
+            setupRecaptcha("recaptcha-container-login", {
+              size: "invisible"
+            });
+            setRecaptchaInitialized(true);
+            console.log('✅ reCAPTCHA initialized for login');
+          }
         } catch (err) {
           console.error("Error initializing reCAPTCHA:", err);
-          setError("Failed to initialize reCAPTCHA. Please refresh the page.");
+          setError("Failed to initialize verification. Please refresh the page.");
         }
-      }, 100);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [step, isAuthenticated, setupRecaptcha]);
+  }, [step, isAuthenticated, recaptchaInitialized, setupRecaptcha]);
+
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        } catch (e) {
+          console.log('Cleanup: reCAPTCHA already cleared');
+        }
+      }
+    };
+  }, []);
 
   // If already authenticated, redirect to home
   useEffect(() => {
@@ -79,38 +99,30 @@ const Login = () => {
         throw new Error("Please enter a valid 10-digit mobile number");
       }
 
-      
-      // Check if phone number exists in the database
-      let phoneExists = false;
-      try {
-        phoneExists = await checkPhoneNumberExists(phoneNumber);
-      } catch (checkError) {
-        console.error('Error checking phone number:', checkError);
-        // If there's a Firestore permission error, allow login to proceed
-        if (checkError.code === 'permission-denied') {
-          console.warn('Permission denied - proceeding with login anyway');
-          phoneExists = true; // Assume exists if we can't check
-        } else {
-          throw checkError;
-        }
-      }
-      
-      if (!phoneExists) {
-        setError("Phone number not registered. Please sign up first.");
-        setLoading(false);
-        return;
-      }
-
+      // For login, we don't check Firestore - Firebase Auth will handle it
+      // If the phone number doesn't exist in Auth, OTP verification will fail naturally
+      console.log('📱 Sending OTP to:', phoneNumber);
       await requestOTP(phoneNumber);
+      console.log('✅ OTP sent successfully');
       setStep(2);
     } catch (err) {
-      const errorMessage = err.message || "Failed to send OTP";
-      setError(errorMessage);
-      console.error("Error:", err);
-
-      if (err.code === "auth/internal-error") {
-        setError("reCAPTCHA error. Please refresh the page and try again.");
+      console.error("❌ Error sending OTP:", err);
+      let errorMessage = "Failed to send OTP. Please try again.";
+      
+      // Handle specific Firebase Auth errors
+      if (err.code === "auth/invalid-phone-number") {
+        errorMessage = "Invalid phone number format.";
+      } else if (err.code === "auth/too-many-requests") {
+        errorMessage = "Too many attempts. Please try again later.";
+      } else if (err.code === "auth/quota-exceeded") {
+        errorMessage = "SMS quota exceeded. Please try again later.";
+      } else if (err.code === "auth/internal-error" || err.code === "auth/invalid-app-credential") {
+        errorMessage = "Verification error. Please refresh the page and try again.";
+      } else if (err.message) {
+        errorMessage = err.message;
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -138,6 +150,17 @@ const Login = () => {
     setStep(1);
     setOtpCode("");
     setError("");
+    setRecaptchaInitialized(false);
+    
+    // Clear reCAPTCHA
+    if (window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      } catch (e) {
+        console.log('reCAPTCHA already cleared');
+      }
+    }
   };
 
   return (
@@ -212,11 +235,8 @@ const Login = () => {
                     </span>
                   </div>
 
-                  {/* reCAPTCHA container */}
-                  <div
-                    id="recaptcha-container-login"
-                    className="flex justify-center my-6"
-                  ></div>
+                  {/* reCAPTCHA container - invisible mode */}
+                  <div id="recaptcha-container-login"></div>
 
                   <button
                     type="submit"

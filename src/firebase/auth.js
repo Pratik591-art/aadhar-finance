@@ -8,7 +8,8 @@ import {
 } from 'firebase/auth';
 import { auth } from './config';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { db } from './firestore';
+import { db } from './config';
+
 
 
 /**
@@ -29,18 +30,31 @@ export const initializeRecaptcha = (containerId = 'recaptcha-container', options
     window.recaptchaVerifier = null;
   }
 
+  // Ensure the container exists and is empty
+  const container = document.getElementById(containerId);
+  if (!container) {
+    throw new Error(`Container element with ID '${containerId}' not found`);
+  }
+
+  // Clear container content
+  container.innerHTML = '';
+
   const defaultOptions = {
-    size: 'normal', // 'normal', 'invisible', or 'compact'
+    size: 'invisible', // Use invisible to avoid multiple renders
     'expired-callback': () => {
-      // Response expired. Ask user to solve reCAPTCHA again
       console.log('reCAPTCHA expired');
     },
     ...options
   };
 
-  window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, defaultOptions);
-
-  return window.recaptchaVerifier;
+  try {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, defaultOptions);
+    console.log('reCAPTCHA initialized successfully');
+    return window.recaptchaVerifier;
+  } catch (error) {
+    console.error('Error creating RecaptchaVerifier:', error);
+    throw error;
+  }
 };
 
 /**
@@ -112,9 +126,7 @@ export const verifyOTP = async (otpCode, confirmationResult = null) => {
       console.log("🔑 Existing user logged in");
     }
 
-    // --- Get and store Firebase JWT ---
-    const token = await user.getIdToken();
-    localStorage.setItem("firebase_token", token);
+    localStorage.setItem("user_uid", user.uid);
 
     return userCredential;
   } catch (error) {
