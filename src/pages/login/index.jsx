@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { checkPhoneNumberExists } from "../../firebase";
 import SEO from "../../components/SEO";
 import { seoConfigs } from "../../utils/seo";
 
