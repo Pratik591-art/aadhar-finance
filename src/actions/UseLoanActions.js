@@ -77,7 +77,6 @@ export const submitLoanApplication = async (formData) => {
     console.log("🗂️ Saving form data to Firestore...");
     const docRef = await addDoc(collection(db, "personalLoan"), {
       userId: userUid,
-      phoneNumber: currentUser.phoneNumber || formData.mobileNumber || null,
       loanAmount: formData.loanAmount,
       monthlySalary: formData.monthlySalary,
       loanPurpose: formData.loanPurpose,
